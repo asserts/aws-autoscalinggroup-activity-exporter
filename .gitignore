@@ -1,0 +1,22 @@
+*.pyc
+__pycache
+.DS_Store
+charts/
+
+# idea
+.idea/
+
+# untracked project data
+bin/
+rules/*
+logs/
+data/
+victoria-metrics-data/
+
+# env related
+.env
+env/
+venv/
+
+# junit xml
+tests.xml
