@@ -1,0 +1,7 @@
+causes:
+  - pattern: ".*Spot Instance interruption notice.*"
+    reason: "interrupt"
+  - pattern: ".*EC2 instance rebalance recommendation.*"
+    reason: "rebalance"
+  - pattern: ".*user request.*"
+    reason: "user_request"
