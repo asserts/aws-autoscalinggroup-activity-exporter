@@ -1,6 +1,7 @@
 import boto3
 import os
 import re
+import sys
 import calendar
 import time
 import datetime
@@ -68,11 +69,14 @@ def publish_activities():
 
     global activity_metric
 
-    conf_path = '../conf/config.yaml'
+    conf_path = 'conf/config.yaml'
     if not os.path.exists(conf_path):
         logger.error(f'File {conf_path} does not exist!')
+        sys.exit(1)
     else:
-        conf = read_yaml_file('../conf/config.yaml')
+        conf = read_yaml_file(
+                os.path.join(os.path.dirname(__file__), conf_path)
+               )
 
     client = boto3.client('autoscaling', region_name=conf['region'])
     groups = client.describe_auto_scaling_groups(

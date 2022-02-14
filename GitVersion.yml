@@ -1,0 +1,11 @@
+assembly-versioning-scheme: MajorMinorPatch
+mode: Mainline
+continuous-delivery-fallback-tag: ''
+major-version-bump-message: '\+bump-version:\s?(breaking|major)'
+minor-version-bump-message: '\+bump-version:\s?(feature|minor)'
+patch-version-bump-message: '\+bump-version:\s?(fix|patch)'
+branches: {}
+ignore:
+  sha: []
+commit-date-format: R
+merge-message-formats: {}

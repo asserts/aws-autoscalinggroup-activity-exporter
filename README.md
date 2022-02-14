@@ -5,17 +5,18 @@ A Prometheus exporter for AWS [AutoScalingGroup Actvities](https://docs.aws.amaz
 
 ## Building and running
 
-Requires python 3.9.
+Requires python 3.9
 
 ```
 poetry shell
 poetry install
 
+cd aws-autoscalinggroup-activity-exporter
+
 # See Configuration section for details
 cp conf/example-config.yaml conf/config.yaml
 
-cd aws-autoscalinggroup-activity-exporter
-pyton app.py
+python app.py
 ```
 
 View metrics with `curl localhost:8080/metrics`
@@ -45,7 +46,7 @@ like so:
 aws_autoscalinggroup_activity{instance_id="i-06b1e395e5596d7cf",name="myASG",reason="interrupt"} 1.0
 ```
 
-Causes for your AutoScalingGroup instances scaling up/down can be viewed in the 
+Causes for your AutoScalingGroup instances scaling up/down can be viewed in the
 AWS EC2 Console -> AutoScalingGroups -> <AutoScalingGroupName> -> Activity
 
 An example with common options:
