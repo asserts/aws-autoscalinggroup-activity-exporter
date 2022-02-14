@@ -37,6 +37,15 @@ activity_metric = Gauge(
     ['name', 'instance_id', 'reason']
 )
 
+@app.route('/health', methods=['GET'])
+def health():
+    """Get server health
+    Returns:
+        str: 'OK'
+    """
+
+    return 'OK', 200
+
 
 @scheduler.task('interval', seconds=15)
 def publish_version():
