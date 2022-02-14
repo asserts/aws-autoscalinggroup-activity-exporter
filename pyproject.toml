@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "spot-instance-exporter"
+name = "aws-autoscalinggroup-activity-exporter"
 version = "0.1.0"
 description = ""
 authors = ["Alex Ramos <aramos@asserts.ai>"]
@@ -10,7 +10,6 @@ boto3 = "^1.20.54"
 Flask = "^1.1.2"
 prometheus-flask-exporter = "^0.18.1"
 gunicorn = "^20.0.4"
-requests = "^2.25.1"
 Flask-APScheduler = "^1.11.0"
 JSON-log-formatter = "^0.3.1"
 kubernetes = "^17.17.0"
