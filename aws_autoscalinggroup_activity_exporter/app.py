@@ -19,7 +19,6 @@ from aws_helper.instance import get_ips_from_instances
 setup_custom_logger(__name__, 'info')
 logger = logging.getLogger(__name__)
 
-logger.info('starting')
 SECONDS_MIN = 60
 SECONDS_HOUR = 60 * 60
 
@@ -128,7 +127,7 @@ def publish_activities():
 
                     if publish:
                         if description:
-                            d_match = re.match('(Terminating|Launching) EC2 instance: (.+).*', description)
+                            d_match = re.match('.*(Launching|Terminating).* EC2 instance: (.+).*', description)
                             if d_match:
                                 instance_id = d_match.group(2)
                                 if not instance_id:
