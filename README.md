@@ -5,8 +5,6 @@ A Prometheus exporter for AWS [AutoScalingGroup Actvities](https://docs.aws.amaz
 
 ## Building and running
 
-Requires python 3.9
-
 ```
 poetry shell
 poetry install
