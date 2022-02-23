@@ -4,6 +4,10 @@ version = "0.1.0"
 description = ""
 authors = ["Alex Ramos <aramos@asserts.ai>"]
 
+packages = [
+    { include = "aws_autoscalinggroup_activity_exporter" }
+]
+
 [tool.poetry.dependencies]
 python = "^3.9"
 boto3 = "^1.20.54"
@@ -14,6 +18,9 @@ Flask-APScheduler = "^1.11.0"
 JSON-log-formatter = "^0.3.1"
 kubernetes = "^17.17.0"
 pytz = "^2021.1"
+
+[tool.poetry.scripts]
+aws-autoscaling-group-activity-exporter = "aws_autoscalinggroup_activity_exporter.cli:cli"
 
 [tool.poetry.dev-dependencies]
 

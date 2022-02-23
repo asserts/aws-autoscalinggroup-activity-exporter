@@ -6,15 +6,14 @@ import calendar
 import time
 import datetime
 import logging
+import atexit
 from flask import Flask
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Gauge
-from flask_apscheduler import APScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
-from serialize.yamlhandler import read_yaml_file
-from logger.log import setup_custom_logger
-from aws_helper.autoscalinggroup import get_group_instances
-from aws_helper.instance import get_ips_from_instances
+from aws_autoscalinggroup_activity_exporter.serialize.yamlhandler import read_yaml_file
+from aws_autoscalinggroup_activity_exporter.logger.log import setup_custom_logger
 
 setup_custom_logger(__name__, 'info')
 logger = logging.getLogger(__name__)
@@ -25,10 +24,6 @@ SECONDS_HOUR = 60 * 60
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)
 
-scheduler = APScheduler()
-scheduler.init_app(app)
-scheduler.start()
-
 info = metrics.info('app_info', 'Application info', version='0.1.0')
 activity_metric = Gauge(
     'aws_autoscalinggroup_activity',
@@ -36,17 +31,25 @@ activity_metric = Gauge(
     ['name', 'instance_id', 'reason']
 )
 
-@app.route('/health', methods=['GET'])
-def health():
-    """Get server health
-    Returns:
-        str: 'OK'
-    """
 
-    return 'OK', 200
+class Scheduler():
+    """Scheduler wrapper to add and run scheduled jobs."""
 
+    def __init__(self, region):
+        self.region = region
+        self.scheduler = BackgroundScheduler()
 
-@scheduler.task('interval', seconds=15)
+    def add_jobs(self):
+        """Add jobs to the BackgroundScheduler"""
+
+        self.scheduler.add_job(func=publish_version, trigger="interval", seconds=15)
+        self.scheduler.add_job(func=publish_activities, trigger='interval', seconds=60, args=(self.region,))
+
+    def start_scheduler(self):
+        """Start the BackgroundScheduler"""
+
+        self.scheduler.start()
+
 def publish_version():
     """Publish version by setting prometheus
        info metric with version label.
@@ -57,8 +60,7 @@ def publish_version():
     info.set(1)
 
 
-@scheduler.task('interval', minutes=1)
-def publish_activities():
+def publish_activities(region):
     """Publish AutoScalingGroup Activities into
        Prometheus metrics.
 
@@ -83,20 +85,24 @@ def publish_activities():
         sys.exit(1)
     else:
         conf = read_yaml_file(
-                os.path.join(os.path.dirname(__file__), conf_path)
-               )
+            os.path.join(os.path.dirname(__file__), conf_path)
+        )
 
-    client = boto3.client('autoscaling', region_name=conf['region'])
+    client = boto3.client('autoscaling', region_name=region)
     groups = client.describe_auto_scaling_groups(
         Filters=_get_filters(conf)
-    )['AutoScalingGroups']
+    )
+    ['AutoScalingGroups']
 
-    possible_causes = conf['causes']
+    try:
+        possible_causes = conf['causes']
+    except TypeError:
+        logger.error('No causes configured in config.yaml')
+        sys.exit(1)
 
     for group in groups:
         name = group.get('AutoScalingGroupName')
-        # instances = get_group_instances(client, name)
-        # instance_ip_map = get_ips_from_instances(instances)
+
         if name:
             response = client.describe_scaling_activities(
                 AutoScalingGroupName=name,
@@ -118,10 +124,7 @@ def publish_activities():
                     # published as inactive (value=0)
                     #
                     # if activity greater than 12 hours ago, ignore (don't publish)
-                    start = calendar.timegm(activity.get('StartTime').utctimetuple())
-                    now = int(time.mktime(datetime.datetime.now().timetuple()))
-                    delta = now - start
-
+                    delta = _calculate_delta(activity.get('StartTime'))
                     publish = delta < 12 * SECONDS_HOUR
                     active = delta < 10 * SECONDS_MIN
 
@@ -131,7 +134,7 @@ def publish_activities():
                             if d_match:
                                 instance_id = d_match.group(2)
                                 if not instance_id:
-                                    logger.info(f'Could not determine instance-id from description: {description}')
+                                    logger.warn(f'Could not determine instance-id from description: {description}')
 
                                 cause = activity.get('Cause')
                                 if cause:
@@ -139,25 +142,54 @@ def publish_activities():
                                     for pc in possible_causes:
                                         c_match = re.match(pc['pattern'], cause)
                                         if c_match:
-                                            # TODO: do we need the instance ip? If an instance is gone, so is the ip
-                                            #       BUT it might be nice to have it if it's available during termination
-                                            #       If funcitonality to detect Instance Launches is desired, could help
-                                            #       but need to remember that the instance might not have an ip assigned
-                                            #       until some time after launch.
-                                            # instance_ip = instance_ip_map.get(instance_id)
-                                            # if not instance_ip:
-                                            #     instance_ip = ""
-
                                             value = 0
                                             if active:
                                                 value = 1
 
                                             activity_metric.labels(
                                                 name=name,
-                                                # instance_ip=instance_ip,
                                                 instance_id=instance_id,
                                                 reason=pc['reason']
                                             ).set(value)
+
+
+def run_app(region, host, port):
+    scheduler = Scheduler(region)
+    scheduler.add_jobs()
+    scheduler.start_scheduler()
+    # Shut down the scheduler when exiting the app
+    atexit.register(lambda: scheduler.scheduler.shutdown())
+    app.run(host, port)
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Get server health
+    Returns:
+        str: 'OK'
+    """
+
+    return 'OK', 200
+
+
+def _calculate_delta(start_time):
+    """Calculate delta from start_time
+       normalizing to UTC. UTC works here since
+       we only care about the difference.
+
+    Args:
+        client (Session): AWS boto3 client
+        name (string): AutoScalingGroup Name
+
+    Returns:
+        int: difference between now and the start time
+    """
+
+    start = calendar.timegm(start_time.utctimetuple())
+    now = int(time.mktime(datetime.datetime.now().timetuple()))
+    delta = now - start
+
+    return delta
 
 
 def _get_filters(conf):
@@ -185,9 +217,3 @@ def _get_filters(conf):
             )
 
     return filters
-
-
-if __name__ == "__main__":
-    publish_activities()
-    app.run(host='0.0.0.0', port=8080)
-    pass
