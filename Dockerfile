@@ -1,6 +1,3 @@
-# This Dockerfile is from:
-# https://github.com/python-poetry/poetry/discussions/1879#discussioncomment-216865
-
 # `python-base` sets up all our shared environment variables
 FROM python:3.9.1-slim as python-base
 
@@ -47,13 +44,12 @@ RUN apt-get update \
 # install poetry - respects $POETRY_VERSION & $POETRY_HOME
 RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
 
-# copy project requirement files here to ensure they will be cached.
+# copy required files here to ensure they will be cached.
 WORKDIR $PYSETUP_PATH
 COPY poetry.lock pyproject.toml ./
 
 # install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
-RUN poetry install --no-dev
-
+RUN poetry install --no-dev --no-root
 
 # `development` image is used during development / testing
 FROM python-base as development
@@ -65,13 +61,21 @@ COPY --from=builder-base $POETRY_HOME $POETRY_HOME
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
 # quicker install as runtime deps are already installed
-RUN poetry install
+RUN poetry install --no-root
 
 # will become mountpoint of our code
-WORKDIR /app
+WORKDIR /opt/aws-autoscalinggroup-activity-exporter
 
-COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
-COPY ./aws_autoscalinggroup_activity_exporter /app/
-WORKDIR /app
-CMD ["python", "app.py"]
 EXPOSE 8080
+# TODO: figure this out
+ENTRYPOINT ["gunicorn", "--bind=0.0.0.0:8080", "--reload", "aws_autoscalinggroup_activity_exporter.app:app"]
+
+# `production` image used for runtime
+FROM python-base as production
+ENV FASTAPI_ENV=production
+COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
+COPY ./ /opt/aws-autoscalinggroup-activity-exporter
+WORKDIR /opt/aws-autoscalinggroup-activity-exporter
+
+
+ENTRYPOINT ["gunicorn", "--bind=0.0.0.0:8080", "--reload", "aws_autoscalinggroup_activity_exporter.app:app"]
