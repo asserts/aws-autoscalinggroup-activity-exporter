@@ -14,7 +14,7 @@ cd aws-autoscalinggroup-activity-exporter
 # See Configuration section for details
 cp conf/example-config.yaml conf/config.yaml
 
-python app.py
+aws-autoscaling-group-activity-exporter --region <region-name>
 ```
 
 View metrics with `curl localhost:8080/metrics`
@@ -22,7 +22,7 @@ View metrics with `curl localhost:8080/metrics`
 
 ## Credentials and permissions
 
-This Exporter uses
+TODO
 
 ## Configuration
 The configuration is in YAML and must be stored in conf/config.yaml.
@@ -49,8 +49,6 @@ AWS EC2 Console -> AutoScalingGroups -> <AutoScalingGroupName> -> Activity
 
 An example with common options:
 ```
-# AWS region to run in
-region: "us-west-2"
 # autoscaling groups to discover by tag
 tags:
   - key: "kubernetes.io/cluster/my-cluster"
