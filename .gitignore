@@ -7,11 +7,7 @@ charts/
 .idea/
 
 # untracked project data
-bin/
-rules/*
-logs/
-data/
-victoria-metrics-data/
+config.yaml
 
 # env related
 .env
