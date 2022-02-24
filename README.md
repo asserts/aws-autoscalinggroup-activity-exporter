@@ -5,11 +5,7 @@ A Prometheus exporter for AWS [AutoScalingGroup Actvities](https://docs.aws.amaz
 
 ## Helm Installation
 
-```
-helm repo add asserts https://asserts.github.io/helm-charts
-
-helm upgrade --install aws-autoscalinggroup-activity-exporter asserts/aws-autoscalinggroup-activity-exporter -n <namespace> --set "region=<region>"
-```
+[AutoScalingGroup Actvitiy Exporter Helm Chart](https://github.com/asserts/helm-charts/tree/master/charts/aws-autoscalinggroup-activity-exporter)
 
 ## Building and running
 
