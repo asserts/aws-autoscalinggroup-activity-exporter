@@ -1,12 +1,10 @@
 import boto3
 import os
 import re
-import sys
 import calendar
 import time
 import datetime
 import logging
-import atexit
 from flask import Flask
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Gauge
@@ -50,6 +48,7 @@ class Scheduler():
 
         self.scheduler.start()
 
+
 def publish_version():
     """Publish version by setting prometheus
        info metric with version label.
@@ -80,25 +79,30 @@ def publish_activities(region):
     global activity_metric
 
     conf_path = 'conf/config.yaml'
-    if not os.path.exists(conf_path):
+    if not os.path.exists(
+               os.path.join(
+                   os.path.dirname(__file__), conf_path
+               )
+            ):
         logger.error(f'File {conf_path} does not exist!')
-        sys.exit(1)
     else:
         conf = read_yaml_file(
             os.path.join(os.path.dirname(__file__), conf_path)
         )
 
     client = boto3.client('autoscaling', region_name=region)
-    groups = client.describe_auto_scaling_groups(
-        Filters=_get_filters(conf)
-    )
-    ['AutoScalingGroups']
+
+    try:
+        groups = client.describe_auto_scaling_groups(
+            Filters=_get_filters(conf)
+        )['AutoScalingGroups']
+    except Exception:
+        logger.warning('No autoscaling groups exist!')
 
     try:
         possible_causes = conf['causes']
     except TypeError:
         logger.error('No causes configured in config.yaml')
-        sys.exit(1)
 
     for group in groups:
         name = group.get('AutoScalingGroupName')
@@ -134,7 +138,7 @@ def publish_activities(region):
                             if d_match:
                                 instance_id = d_match.group(2)
                                 if not instance_id:
-                                    logger.warn(f'Could not determine instance-id from description: {description}')
+                                    logger.warning(f'Could not determine instance-id from description: {description}')
 
                                 cause = activity.get('Cause')
                                 if cause:
@@ -153,15 +157,6 @@ def publish_activities(region):
                                             ).set(value)
 
 
-def run_app(region, host, port):
-    scheduler = Scheduler(region)
-    scheduler.add_jobs()
-    scheduler.start_scheduler()
-    # Shut down the scheduler when exiting the app
-    atexit.register(lambda: scheduler.scheduler.shutdown())
-    app.run(host, port)
-
-
 @app.route('/health', methods=['GET'])
 def health():
     """Get server health
@@ -178,8 +173,7 @@ def _calculate_delta(start_time):
        we only care about the difference.
 
     Args:
-        client (Session): AWS boto3 client
-        name (string): AutoScalingGroup Name
+        start_time (datetime): time the activity started
 
     Returns:
         int: difference between now and the start time

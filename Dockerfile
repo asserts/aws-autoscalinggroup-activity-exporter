@@ -54,6 +54,7 @@ RUN poetry install --no-dev --no-root
 # `development` image is used during development / testing
 FROM python-base as development
 ENV FASTAPI_ENV=development
+ENV PYTHONPATH=${PYTHONPATH}:/opt/aws-autoscalinggroup-activity-exporter/aws_autoscalinggroup_activity_exporter
 WORKDIR $PYSETUP_PATH
 
 # copy in our built poetry + venv
@@ -67,15 +68,18 @@ RUN poetry install --no-root
 WORKDIR /opt/aws-autoscalinggroup-activity-exporter
 
 EXPOSE 8080
-# TODO: figure this out
-ENTRYPOINT ["gunicorn", "--bind=0.0.0.0:8080", "--reload", "aws_autoscalinggroup_activity_exporter.app:app"]
+ENTRYPOINT ["python", "aws_autoscalinggroup_activity_exporter/cli.py"]
+CMD ["--region", "us-west-2", "--port", "8080"]
 
 # `production` image used for runtime
 FROM python-base as production
 ENV FASTAPI_ENV=production
+ENV PYTHONPATH=${PYTHONPATH}:/opt/aws-autoscalinggroup-activity-exporter/aws_autoscalinggroup_activity_exporter
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 COPY ./ /opt/aws-autoscalinggroup-activity-exporter
 WORKDIR /opt/aws-autoscalinggroup-activity-exporter
 
-
-ENTRYPOINT ["gunicorn", "--bind=0.0.0.0:8080", "--reload", "aws_autoscalinggroup_activity_exporter.app:app"]
+ENTRYPOINT ["python", "aws_autoscalinggroup_activity_exporter/cli.py"]
+CMD ["--region", "us-west-2", "--port", "8080"]
+# TODO: configure activity_metric to work with gunicorn
+# CMD ["--region", "us-west-2", "--port", "8080", "--with-gunicorn", "1"]
