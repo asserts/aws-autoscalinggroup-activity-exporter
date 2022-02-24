@@ -52,7 +52,7 @@ View metrics with `curl localhost:8080/metrics`
 
 ## Credentials and permissions
 
-Currently `AWS_ACCESS_KEY_ID=` and `AWS_SECRET_ACCESS_KEY` can be used to run locally or in docker.
+Currently `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` can be used to run locally or in docker.
 Alternatively, if running on an EC2 instance or in EKS, the instance role can be used.
 
 ## Configuration
@@ -76,7 +76,7 @@ aws_autoscalinggroup_activity{instance_id="i-06b1e395e5596d7cf",name="myASG",rea
 ```
 
 Causes for your AutoScalingGroup instances scaling up/down can be viewed in the
-AWS EC2 Console -> AutoScalingGroups -> <AutoScalingGroupName> -> Activity
+`AWS EC2 Console` -> `AutoScalingGroups` -> `<AutoScalingGroupName>` -> `Activity`
 
 An example with common options:
 ```
