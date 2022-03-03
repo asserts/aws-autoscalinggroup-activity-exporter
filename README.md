@@ -10,6 +10,15 @@ A Prometheus exporter for AWS [AutoScalingGroup Actvities](https://docs.aws.amaz
 ## Building and running
 
 ### Source
+
+Installing from source requries python >= 3.7 (install platform dependent)
+
+[Install poetry](https://python-poetry.org/docs/#installation) if needed with:
+
+```
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+```
+
 ```
 poetry shell
 poetry install
