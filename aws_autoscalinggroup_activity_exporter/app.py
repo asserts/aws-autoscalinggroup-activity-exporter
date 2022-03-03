@@ -33,15 +33,16 @@ activity_metric = Gauge(
 class Scheduler():
     """Scheduler wrapper to add and run scheduled jobs."""
 
-    def __init__(self, region):
+    def __init__(self, region, conf_path):
         self.region = region
+        self.conf_path = conf_path
         self.scheduler = BackgroundScheduler()
 
     def add_jobs(self):
         """Add jobs to the BackgroundScheduler"""
 
         self.scheduler.add_job(func=publish_version, trigger="interval", seconds=15)
-        self.scheduler.add_job(func=publish_activities, trigger='interval', seconds=60, args=(self.region,))
+        self.scheduler.add_job(func=publish_activities, trigger='interval', seconds=60, args=(self.region, self.conf_path))
 
     def start_scheduler(self):
         """Start the BackgroundScheduler"""
@@ -59,7 +60,7 @@ def publish_version():
     info.set(1)
 
 
-def publish_activities(region):
+def publish_activities(region, conf_path):
     """Publish AutoScalingGroup Activities into
        Prometheus metrics.
 
@@ -78,17 +79,9 @@ def publish_activities(region):
 
     global activity_metric
 
-    conf_path = 'conf/config.yaml'
-    if not os.path.exists(
-               os.path.join(
-                   os.path.dirname(__file__), conf_path
-               )
-            ):
-        logger.error(f'File {conf_path} does not exist!')
-    else:
-        conf = read_yaml_file(
-            os.path.join(os.path.dirname(__file__), conf_path)
-        )
+    conf = read_yaml_file(
+        os.path.join(os.path.dirname(__file__), conf_path)
+    )
 
     client = boto3.client('autoscaling', region_name=region)
 
