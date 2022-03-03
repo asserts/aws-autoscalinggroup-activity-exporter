@@ -1,5 +1,3 @@
-# AWS region to run in
-region: "us-west-2"
 # autoscaling groups to discover by tag
 tags:
   - key: "kubernetes.io/cluster/my-cluster"
