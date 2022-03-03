@@ -85,10 +85,12 @@ def publish_activities(region, conf_path):
 
     client = boto3.client('autoscaling', region_name=region)
 
+    groups = client.describe_auto_scaling_groups(
+        Filters=_get_filters(conf)
+    )
+
     try:
-        groups = client.describe_auto_scaling_groups(
-            Filters=_get_filters(conf)
-        )['AutoScalingGroups']
+        groups = groups['AutoScalingGroups']
     except Exception:
         logger.warning('No autoscaling groups exist!')
 
