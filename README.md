@@ -60,6 +60,25 @@ View metrics with `curl localhost:8080/metrics`
 Currently `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` can be used to run locally or in docker.
 Alternatively, if running on an EC2 instance or in EKS, the instance role can be used.
 
+2 IAM Permissions are required and shown in the following example policy:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "autoscaling:DescribeScalingActivities",
+                "autoscaling:DescribeAutoScalingGroups"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
 ## Configuration
 The configuration is in YAML and must be stored in conf/config.yaml.
 An example can be found in conf/example-config.yaml
